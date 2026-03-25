@@ -5,6 +5,7 @@ import os
 from flask import Flask, render_template, request, jsonify, session
 from chat import send_message, list_chats, load_chat, create_chat, delete_chat
 from auth import signup, login
+from profiles import load_profile
 import secrets
 
 app = Flask(__name__)
@@ -42,6 +43,19 @@ def do_login():
 def do_logout():
     session.pop("user", None)
     return jsonify({"ok": True})
+
+
+@app.route("/me", methods=["GET"])
+def me():
+    user = session.get("user")
+    if not user:
+        return jsonify({"error": "not logged in"}), 401
+    profile = load_profile(user)
+    return jsonify({
+        "username": user,
+        "interests": profile.get("interests", []),
+        "chat_count": profile.get("chat_count", 0),
+    })
 
 
 @app.route("/chats", methods=["GET"])

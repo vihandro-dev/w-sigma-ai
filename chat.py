@@ -47,11 +47,20 @@ def list_chats(username):
         if fname.endswith(".json"):
             with open(os.path.join(user_dir, fname), "r") as f:
                 data = json.load(f)
+                messages = data.get("messages", [])
+                # Get last message preview
+                last_preview = ""
+                if messages:
+                    last_msg = messages[-1]
+                    last_preview = last_msg.get("text", "")[:60]
+                    if len(last_msg.get("text", "")) > 60:
+                        last_preview += "..."
                 chats.append({
                     "id": data["id"],
                     "title": data.get("title", "new chat"),
                     "created": data.get("created", ""),
-                    "msg_count": len(data.get("messages", [])),
+                    "msg_count": len(messages),
+                    "preview": last_preview,
                 })
     chats.sort(key=lambda x: x["created"], reverse=True)
     return chats
@@ -133,15 +142,19 @@ def _generate_title(user_message):
     # Clean up and truncate
     title = user_message.strip()
     # Remove common filler words at start
-    for prefix in ["hey ", "yo ", "hi ", "hello ", "sup ", "ok so ", "so ", "um ", "like "]:
+    for prefix in ["hey ", "yo ", "hi ", "hello ", "sup ", "ok so ", "so ", "um ", "like ",
+                    "can you ", "could you ", "please ", "pls ", "help me ", "i need ", "i want "]:
         if title.lower().startswith(prefix):
             title = title[len(prefix):]
             break
     title = title.strip()
-    if len(title) > 35:
+    # Capitalize first letter
+    if title:
+        title = title[0].upper() + title[1:]
+    if len(title) > 40:
         # Cut at last word boundary
-        title = title[:35].rsplit(" ", 1)[0] + "..."
-    return title or "chat"
+        title = title[:40].rsplit(" ", 1)[0] + "..."
+    return title or "New chat"
 
 
 def send_message(username, chat_id, message):
